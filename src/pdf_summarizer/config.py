@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
-GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
+GOOGLE_CLOUD_PROJECT: str = os.getenv("GOOGLE_CLOUD_PROJECT", "")
+GOOGLE_CLOUD_LOCATION: str = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "gemini-flash")
 DEFAULT_OUTPUT_DIR: Path = Path(os.getenv("DEFAULT_OUTPUT_DIR", "output/notes"))
 TEXT_CHAR_LIMIT: int = int(os.getenv("TEXT_CHAR_LIMIT", "30000"))
