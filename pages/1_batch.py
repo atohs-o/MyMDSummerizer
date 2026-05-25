@@ -75,30 +75,33 @@ if run:
         for i, u in enumerate(raw_urls)
     ]
     items = url_items + pdf_items
+    n = len(items)
 
-    with st.status("処理中...", expanded=True) as status_box:
+    # ① fetch
+    st.markdown("**① fetch中...**")
+    fetch_bar = st.progress(0, text=f"0 / {n} 件")
+    fetch_label = st.empty()
 
-        # ① fetch
-        st.write("① URLフェッチ・PDF読み込み中...")
-        fetched = fetch_all(items)
-        fetch_ok = sum(1 for i in fetched if i.fetch_status == FetchStatus.SUCCESS)
-        fetch_ng = len(fetched) - fetch_ok
-        st.write(f"✅ fetch完了: {fetch_ok}件取得 / {fetch_ng}件失敗")
+    fetched = fetch_all(items)
 
-        # ② 要約
-        st.write("② LLM要約中...")
-        bar = st.progress(0)
-        label = st.empty()
+    fetch_ok = sum(1 for i in fetched if i.fetch_status == FetchStatus.SUCCESS)
+    fetch_ng = n - fetch_ok
+    fetch_bar.progress(1.0, text=f"{n} / {n} 件")
+    fetch_label.markdown(f"✅ fetch完了: **{fetch_ok}件**取得 / {fetch_ng}件失敗")
 
-        def _on_progress(current: int, total: int, source: str) -> None:
-            bar.progress(current / total)
-            label.caption(f"{current} / {total} 件  —  {source[:80]}")
+    # ② 要約
+    st.markdown("**② 要約中...**")
+    sum_bar = st.progress(0, text=f"0 / {fetch_ok} 件")
+    sum_label = st.empty()
 
-        results = summarize_all(fetched, model_key=model_key, on_progress=_on_progress)
-        label.empty()
-        st.write("✅ 要約完了")
+    def _on_progress(current: int, total: int, source: str) -> None:
+        sum_bar.progress(current / total, text=f"{current} / {total} 件")
+        sum_label.caption(f"処理中: {source[:80]}")
 
-        status_box.update(label="処理完了", state="complete", expanded=False)
+    results = summarize_all(fetched, model_key=model_key, on_progress=_on_progress)
+    sum_label.empty()
+    sum_bar.progress(1.0, text=f"{fetch_ok} / {fetch_ok} 件")
+    st.markdown("✅ 要約完了")
 
     st.session_state["batch_items"] = results
     st.session_state["batch_done"] = True
@@ -142,20 +145,19 @@ if failed_all:
 
 if done and success:
     if st.button("⬇ output/ に書き出す"):
-        with st.status(f"{len(success)}件を保存中...", expanded=True) as save_status:
-            saved = []
-            save_bar = st.progress(0)
-            save_label = st.empty()
+        save_bar = st.progress(0, text="保存中...")
+        save_label = st.empty()
+        saved = []
+        try:
             for i, item in enumerate(success):
                 save_label.caption(f"{i + 1} / {len(success)} 件  —  {item.title or item.source}")
                 p = render_note(item, output_dir, model_key)
                 saved.append(p)
-                save_bar.progress((i + 1) / len(success))
+                save_bar.progress((i + 1) / len(success), text="保存中...")
             if failed_all:
                 render_failed(items, output_dir)
+            save_bar.empty()
             save_label.empty()
-            save_status.update(
-                label=f"✅ {len(saved)}件を {output_dir} に保存しました。",
-                state="complete",
-                expanded=False,
-            )
+            st.success(f"✅ {len(saved)}件を {output_dir} に保存しました。")
+        except Exception as e:
+            st.error(f"保存中にエラーが発生しました: {e}")
