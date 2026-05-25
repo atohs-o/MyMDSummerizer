@@ -22,40 +22,37 @@ st.title("📦 Batch処理")
 
 # ── 入力 UI ───────────────────────────────────────────────────────────────────
 
-input_mode = st.radio("入力方法", ["URLリスト", "PDFアップロード"], horizontal=True)
+st.markdown("**URL リスト**")
+text = st.text_area(
+    "URLを1行1件で貼り付け",
+    height=150,
+    placeholder="https://example.com/paper1.pdf\nhttps://example.com/paper2",
+    label_visibility="collapsed",
+)
+uploaded_txt = st.file_uploader("urls.txt をアップロード", type=["txt"])
+if uploaded_txt:
+    text = uploaded_txt.read().decode("utf-8")
+raw_urls = [u.strip() for u in (text or "").splitlines() if u.strip()]
 
-raw_urls: list[str] = []
+st.markdown("**PDF ファイル**")
+uploaded_pdfs = st.file_uploader("PDFファイル（複数可）", type=["pdf"], accept_multiple_files=True)
 pdf_items: list[Item] = []
-
-if input_mode == "URLリスト":
-    text = st.text_area(
-        "URLを1行1件で貼り付け（または urls.txt をアップロード）",
-        height=180,
-        placeholder="https://example.com/paper1.pdf\nhttps://example.com/paper2",
-    )
-    uploaded_txt = st.file_uploader("urls.txt をアップロード", type=["txt"])
-    if uploaded_txt:
-        text = uploaded_txt.read().decode("utf-8")
-    raw_urls = [u.strip() for u in (text or "").splitlines() if u.strip()]
-else:
-    uploaded_pdfs = st.file_uploader("PDFファイル（複数可）", type=["pdf"], accept_multiple_files=True)
-    for f in uploaded_pdfs or []:
-        tmp_path = Path(f"/tmp/_batch_{f.name}")
-        tmp_path.write_bytes(f.read())
-        pdf_items.append(
-            Item(
-                id=slugify(tmp_path.stem, allow_unicode=False) or tmp_path.stem,
-                source_type=SourceType.PDF,
-                source=str(tmp_path),
-            )
+for f in uploaded_pdfs or []:
+    tmp_path = Path(f"/tmp/_batch_{f.name}")
+    tmp_path.write_bytes(f.read())
+    pdf_items.append(
+        Item(
+            id=slugify(tmp_path.stem, allow_unicode=True) or tmp_path.stem,
+            source_type=SourceType.PDF,
+            source=str(tmp_path),
         )
+    )
 
 model_key = st.selectbox("モデル", list(MODELS.keys()), index=list(MODELS.keys()).index(DEFAULT_MODEL))
-
 output_dir = Path(st.text_input("出力先ディレクトリ", value=str(DEFAULT_OUTPUT_DIR)))
 
-all_ready = bool(raw_urls or pdf_items)
-run = st.button("▶ 実行", type="primary", disabled=not all_ready)
+total = len(raw_urls) + len(pdf_items)
+run = st.button(f"▶ 実行（{total}件）" if total else "▶ 実行", type="primary", disabled=total == 0)
 
 # ── セッションステート初期化 ───────────────────────────────────────────────────
 
@@ -69,17 +66,15 @@ if "batch_done" not in st.session_state:
 if run:
     st.session_state["batch_done"] = False
 
-    if input_mode == "URLリスト":
-        items = [
-            Item(
-                id=slugify(u.split("/")[-1].split("?")[0], allow_unicode=False) or f"item-{i}",
-                source_type=SourceType.URL,
-                source=u,
-            )
-            for i, u in enumerate(raw_urls)
-        ]
-    else:
-        items = pdf_items
+    url_items = [
+        Item(
+            id=slugify(u.split("/")[-1].split("?")[0], allow_unicode=True) or f"item-{i}",
+            source_type=SourceType.URL,
+            source=u,
+        )
+        for i, u in enumerate(raw_urls)
+    ]
+    items = url_items + pdf_items
 
     progress = st.progress(0, text="fetch 中...")
     with st.spinner("fetch 中..."):
@@ -116,7 +111,7 @@ if success:
     st.markdown("### 成功")
     for item in success:
         with st.expander(f"📄 {item.title or item.source}"):
-            st.markdown(f"**タグ:** " + " / ".join(f"`{t}`" for t in item.tags))
+            st.markdown("**タグ:** " + " / ".join(f"`{t}`" for t in item.tags))
             st.write(item.summary)
 
 failed_all = fetch_failed + summary_failed
