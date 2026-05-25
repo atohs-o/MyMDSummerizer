@@ -121,6 +121,13 @@ summary_failed = [
     if i.fetch_status == FetchStatus.SUCCESS and i.summary_status != SummaryStatus.SUCCESS
 ]
 
+if "save_result" in st.session_state:
+    msg, ok = st.session_state.pop("save_result")
+    if ok:
+        st.success(msg)
+    else:
+        st.error(msg)
+
 st.markdown(
     f"**完了: {len(success)}件成功 / {len(fetch_failed)}件fetch失敗 / {len(summary_failed)}件要約失敗**"
 )
@@ -146,18 +153,21 @@ if failed_all:
 if done and success:
     if st.button("⬇ output/ に書き出す"):
         save_bar = st.progress(0, text="保存中...")
-        save_label = st.empty()
         saved = []
         try:
             for i, item in enumerate(success):
-                save_label.caption(f"{i + 1} / {len(success)} 件  —  {item.title or item.source}")
-                p = render_note(item, output_dir, model_key)
-                saved.append(p)
-                save_bar.progress((i + 1) / len(success), text="保存中...")
+                save_bar.progress((i + 1) / len(success), text=f"保存中... {i + 1} / {len(success)} 件")
+                render_note(item, output_dir, model_key)
+                saved.append(item)
             if failed_all:
                 render_failed(items, output_dir)
-            save_bar.empty()
-            save_label.empty()
-            st.success(f"✅ {len(saved)}件を {output_dir} に保存しました。")
+            st.session_state["save_result"] = (
+                f"✅ {len(saved)}件を {output_dir} に保存しました。",
+                True,
+            )
         except Exception as e:
-            st.error(f"保存中にエラーが発生しました: {e}")
+            st.session_state["save_result"] = (
+                f"保存中にエラーが発生しました: {e}",
+                False,
+            )
+        st.rerun()
