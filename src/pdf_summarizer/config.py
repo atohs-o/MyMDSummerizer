@@ -12,7 +12,7 @@ GOOGLE_CLOUD_PROJECT: str = os.getenv("GOOGLE_CLOUD_PROJECT", "")
 GOOGLE_CLOUD_LOCATION: str = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "gemini-flash")
 DEFAULT_OUTPUT_DIR: Path = Path(os.getenv("DEFAULT_OUTPUT_DIR", "output/notes"))
-TEXT_CHAR_LIMIT: int = int(os.getenv("TEXT_CHAR_LIMIT", "30000"))
+TEXT_CHAR_LIMIT: int = int(os.getenv("TEXT_CHAR_LIMIT", "100000"))
 BATCH_POLL_INTERVAL_SEC: int = int(os.getenv("BATCH_POLL_INTERVAL_SEC", "60"))
 
 MODELS: dict[str, dict[str, str]] = {

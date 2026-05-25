@@ -34,6 +34,7 @@ else:
         pdf_bytes = uploaded.read()
 
 model_key = st.selectbox("モデル", list(MODELS.keys()), index=list(MODELS.keys()).index(DEFAULT_MODEL))
+output_dir = Path(st.text_input("出力先ディレクトリ", value=str(DEFAULT_OUTPUT_DIR)))
 
 run = st.button("▶ 実行", type="primary", disabled=not (url_input or pdf_bytes))
 
@@ -126,6 +127,5 @@ with st.expander("③ 生成されるMarkdownプレビュー", expanded=True):
 
 # ④ 保存ボタン
 if st.button("⬇ このファイルを保存"):
-    output_dir = DEFAULT_OUTPUT_DIR
     saved_path = render_note(item, output_dir, model_key)
     st.success(f"保存しました: `{saved_path}`")
