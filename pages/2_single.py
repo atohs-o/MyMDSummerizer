@@ -34,6 +34,7 @@ else:
         pdf_bytes = uploaded.read()
 
 model_key = st.selectbox("モデル", list(MODELS.keys()), index=list(MODELS.keys()).index(DEFAULT_MODEL))
+
 output_dir = Path(st.text_input("出力先ディレクトリ", value=str(DEFAULT_OUTPUT_DIR)))
 
 run = st.button("▶ 実行", type="primary", disabled=not (url_input or pdf_bytes))

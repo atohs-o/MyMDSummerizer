@@ -51,6 +51,7 @@ else:
         )
 
 model_key = st.selectbox("モデル", list(MODELS.keys()), index=list(MODELS.keys()).index(DEFAULT_MODEL))
+
 output_dir = Path(st.text_input("出力先ディレクトリ", value=str(DEFAULT_OUTPUT_DIR)))
 
 all_ready = bool(raw_urls or pdf_items)
