@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable
 
 from google import genai
 from google.genai import types as genai_types
@@ -96,8 +97,9 @@ def summarize_one(item: Item, model_key: str = "gemini-flash") -> Item:
 
 def summarize_all(
     items: list[Item],
-    model_key: str = "gemini-flash",
+    model_key: str = "gemini-2.5-flash",
     batch: bool = True,  # reserved for future Gemini batch API; currently sequential
+    on_progress: Callable[[int, int, str], None] | None = None,
 ) -> list[Item]:
     """Summarize all items sequentially (for バッチ処理ページ)."""
     model_id = MODELS[model_key]["model_id"]
@@ -105,11 +107,13 @@ def summarize_all(
     client = _make_client()
 
     results: list[Item] = []
-    for item in items:
+    for i, item in enumerate(items):
         if item.fetch_status != FetchStatus.SUCCESS or not item.raw_text:
             item.summary_status = SummaryStatus.SKIPPED
             results.append(item)
-            continue
-        results.append(_summarize_item(client, model_id, prompt_template, item))
+        else:
+            results.append(_summarize_item(client, model_id, prompt_template, item))
+        if on_progress:
+            on_progress(i + 1, len(items), item.source)
 
     return results

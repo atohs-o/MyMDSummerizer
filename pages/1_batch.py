@@ -76,14 +76,29 @@ if run:
     ]
     items = url_items + pdf_items
 
-    progress = st.progress(0, text="fetch 中...")
-    with st.spinner("fetch 中..."):
-        fetched = fetch_all(items)
-    progress.progress(50, text="LLM 処理中...")
+    with st.status("処理中...", expanded=True) as status_box:
 
-    with st.spinner("LLM 処理中..."):
-        results = summarize_all(fetched, model_key=model_key)
-    progress.progress(100, text="完了")
+        # ① fetch
+        st.write("① URLフェッチ・PDF読み込み中...")
+        fetched = fetch_all(items)
+        fetch_ok = sum(1 for i in fetched if i.fetch_status == FetchStatus.SUCCESS)
+        fetch_ng = len(fetched) - fetch_ok
+        st.write(f"✅ fetch完了: {fetch_ok}件取得 / {fetch_ng}件失敗")
+
+        # ② 要約
+        st.write("② LLM要約中...")
+        bar = st.progress(0)
+        label = st.empty()
+
+        def _on_progress(current: int, total: int, source: str) -> None:
+            bar.progress(current / total)
+            label.caption(f"{current} / {total} 件  —  {source[:80]}")
+
+        results = summarize_all(fetched, model_key=model_key, on_progress=_on_progress)
+        label.empty()
+        st.write("✅ 要約完了")
+
+        status_box.update(label="処理完了", state="complete", expanded=False)
 
     st.session_state["batch_items"] = results
     st.session_state["batch_done"] = True
@@ -127,10 +142,20 @@ if failed_all:
 
 if done and success:
     if st.button("⬇ output/ に書き出す"):
-        saved = []
-        for item in success:
-            p = render_note(item, output_dir, model_key)
-            saved.append(p)
-        if failed_all:
-            render_failed(items, output_dir)
-        st.success(f"{len(saved)}件を `{output_dir}` に保存しました。")
+        with st.status(f"{len(success)}件を保存中...", expanded=True) as save_status:
+            saved = []
+            save_bar = st.progress(0)
+            save_label = st.empty()
+            for i, item in enumerate(success):
+                save_label.caption(f"{i + 1} / {len(success)} 件  —  {item.title or item.source}")
+                p = render_note(item, output_dir, model_key)
+                saved.append(p)
+                save_bar.progress((i + 1) / len(success))
+            if failed_all:
+                render_failed(items, output_dir)
+            save_label.empty()
+            save_status.update(
+                label=f"✅ {len(saved)}件を {output_dir} に保存しました。",
+                state="complete",
+                expanded=False,
+            )
