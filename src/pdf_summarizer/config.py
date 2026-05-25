@@ -16,8 +16,8 @@ TEXT_CHAR_LIMIT: int = int(os.getenv("TEXT_CHAR_LIMIT", "30000"))
 BATCH_POLL_INTERVAL_SEC: int = int(os.getenv("BATCH_POLL_INTERVAL_SEC", "60"))
 
 MODELS: dict[str, dict[str, str]] = {
-    "gemini-flash": {"provider": "google", "model_id": "gemini-2.5-flash"},
-    "gemini-flash-lite": {"provider": "google", "model_id": "gemini-2.5-flash-lite"},
+    "gemini-2.5-flash": {"provider": "google", "model_id": "gemini-2.5-flash"},
+    "gemini-2.5-flash-lite": {"provider": "google", "model_id": "gemini-2.5-flash-lite"},
     "claude-sonnet": {"provider": "anthropic", "model_id": "claude-sonnet-4-6"},
     "claude-haiku": {"provider": "anthropic", "model_id": "claude-haiku-4-5-20251001"},
 }
