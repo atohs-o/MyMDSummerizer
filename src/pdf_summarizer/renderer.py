@@ -21,7 +21,7 @@ def render_note(item: Item, output_dir: Path, model_key: str) -> Path:
     """Write a success note as Obsidian-formatted Markdown; return its Path."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    slug = slugify(item.title or item.id, allow_unicode=False) or item.id
+    slug = slugify(item.title or item.id, allow_unicode=True) or item.id
     path = output_dir / f"{slug}.md"
 
     tags_yaml = "\n".join(f"  - {t}" for t in item.tags)
